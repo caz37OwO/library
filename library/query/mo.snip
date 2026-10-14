@@ -1,0 +1,40 @@
+struct query{
+  ll l,r;
+};
+vec<query> que(Q);
+auto mo=[&]()->void{
+  ll Q=(ll)que.size(),B=512,L=0,R=0;
+  vec P(Q);
+  iota(all(P),0);
+  sort(all(P),[&](ll x,ll y){
+    auto key=[&](ll i){
+        ll b=que[i].l/B,r=que[i].r;
+        if(b&1) r*=-1;
+        return tup(b,r);
+    };
+    return key(x)<key(y);
+  });
+  auto addL=[&](ll p)->void{
+
+  };
+  auto addR=[&](ll p)->void{
+
+  };
+  auto eraseL=[&](ll p)->void{
+
+  };
+  auto eraseR=[&](ll p)->void{
+
+  };
+  auto ans=[&](ll id)->void{
+
+  };
+  for(ll q=0;q<Q;q++){
+    ll p=P[q],l=que[p].l,r=que[p].r;
+    while(L>l) addL(--L);
+    while(R<r) addR(R++);
+    while(L<l) eraseL(L++);
+    while(R>r) eraseR(--R);
+    ans(p);
+  }
+};

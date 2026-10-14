@@ -1,0 +1,10 @@
+gvec2 G(N);
+gvec E(M);
+for(ll i=0;i<M;i++){
+  ll u,v,w;
+  cin >> u >> v >> w;
+  u--,v--;
+  E[i]={u,v,w,i};
+  G[u].pb({u,v,w,i});
+  G[v].pb({v,u,w,i});
+}

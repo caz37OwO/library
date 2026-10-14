@@ -1,0 +1,60 @@
+struct T{
+  ll x;
+};
+struct S{
+  ll x;
+};
+auto run_dp=[&](ll root,gvec2 &G)->vector<T>{
+  ll N=(ll)G.size();
+  auto T_unit=[&]()->T{
+    return (T){0};
+  };
+  auto S_unit=[&]()->S{
+    return (S){0};
+  };
+  auto merge=[&](T val,S acc,ll child,ll parent){
+    S res;
+    res.x=val.x+acc.x;
+    return res;
+  };
+  auto merge_s=[&](S a,S b){
+    S res;
+    res.x=a.x+b.x;
+    return res;
+  };
+  auto apply=[&](S acc,ll v){
+    T res;
+    res.x=acc.x+1;
+    return res;
+  };
+  vector<T> sub(N,T_unit()),dp(N,T_unit());
+  S es=S_unit();
+  T et=T_unit();
+  auto dfs1=[&](this auto dfs1,ll p,ll pre)->T{
+    S acc=es;
+    for(auto e:G[p]) if(e.to!=pre) acc=merge(dfs1(e.to,p),acc,e.to,p);
+    sub[p]=apply(acc,p);
+    return sub[p];
+  };
+  auto dfs2=[&](this auto dfs2,ll p,ll pre,T val_p)->void{
+    vector<T> vec;
+    for(auto e:G[p]){
+      if(e.to==pre) vec.pb(val_p);
+      else vec.pb(sub[e.to]);
+    }
+    ll deg=(ll)vec.size();
+    vector<S> L(deg+1,es),R(deg+1,es);
+    for(ll i=0;i<deg;i++) L[i+1]=merge(vec[i],L[i],G[p][i].to,p);
+    for(ll i=deg-1;i>=0;i--) R[i]=merge(vec[i],R[i+1],G[p][i].to,p);
+    dp[p]=apply(L[deg],p);
+    for(ll i=0;i<deg;i++){
+      auto e=G[p][i];
+      if(e.to==pre) continue;
+      S acc=merge_s(L[i],R[i+1]);
+      dfs2(e.to,p,apply(acc,p));
+    }
+  };
+  dfs1(root,-1);
+  dfs2(root,-1,et);
+  return dp;
+};
