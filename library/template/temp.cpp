@@ -2,7 +2,7 @@
 #include "template/debug/debug.hpp"
 
 void solve(){
-
+  
 }
 
 int main(){

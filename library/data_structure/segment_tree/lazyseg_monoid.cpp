@@ -44,14 +44,19 @@ struct LST{
     for(ll i=0;i<sz;i++) node[i+n-1]=v[i];
     for(ll i=n-2;i>=0;i--) node[i]=op(node[i*2+1],node[i*2+2]);
   }
+  void pull(ll k){
+    node[k]=op(node[2*k+1],node[2*k+2]);
+  }
   void apply_op(ll k,Operator f){
     node[k]=mapping(f,node[k]);
-    lazy[k]=composition(f,lazy[k]);
-    lazy_flag[k]=true;
+    if(k<n-1){
+      lazy[k]=composition(f,lazy[k]);
+      lazy_flag[k]=true;
+    }
   }
-  void push(ll k,ll l,ll r){
+  void push(ll k){
     if(!lazy_flag[k]) return;
-    if(r-l>1){
+    if(k<n-1){
       apply_op(k*2+1,lazy[k]);
       apply_op(k*2+2,lazy[k]);
     }
@@ -60,18 +65,19 @@ struct LST{
   }
   void apply(ll a,ll b,Operator f,ll k=0,ll l=0,ll r=-1){
     if(r<0) r=n;
-    push(k,l,r);
     if(b<=l||r<=a) return;
-    if(a<=l&&r<=b) apply_op(k,f);
-    else{
-      apply(a,b,f,2*k+1,l,(l+r)/2);
-      apply(a,b,f,2*k+2,(l+r)/2,r);
-      node[k]=op(node[2*k+1],node[2*k+2]);
+    if(a<=l&&r<=b){
+      apply_op(k,f);
+      return;
     }
+    push(k);
+    apply(a,b,f,2*k+1,l,(l+r)/2);
+    apply(a,b,f,2*k+2,(l+r)/2,r);
+    pull(k);
   }
   Monoid find(ll a,ll b,ll k=0,ll l=0,ll r=-1){
     if(r<0) r=n;
-    push(k,l,r);
+    push(k);
     if(b<=l||r<=a) return e_m;
     if(a<=l&&r<=b) return node[k];
     Monoid vl=find(a,b,2*k+1,l,(l+r)/2);
@@ -82,7 +88,7 @@ struct LST{
   template<typename F>
   ll max_right(ll a,F check,Monoid &acc,ll k=0,ll l=0,ll r=-1){
     if(r<0) r=n;
-    push(k,l,r);
+    push(k);
     if(r<=a) return r;
     if(a<=l){
       Monoid nxt=op(acc,node[k]);
@@ -105,7 +111,7 @@ struct LST{
   template<typename F>
   ll min_left(ll b,F check,Monoid &acc,ll k=0,ll l=0,ll r=-1){
     if(r<0) r=n;
-    push(k,l,r);
+    push(k);
     if(b<=l) return l;
     if(r<=b){
       Monoid nxt=op(node[k],acc);

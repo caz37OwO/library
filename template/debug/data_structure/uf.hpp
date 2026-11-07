@@ -1,14 +1,14 @@
 template<class T>
-concept DebugUnionFind = requires(T& x, ll i) {
+concept DebugUnionFind = requires(T& x, long long i) {
   x.par;
   x.root(i);
 };
 
 template<DebugUnionFind T>
 void debug_print(T& uf) {
-  vector<vector<ll>> groups(uf.par.size());
+  vector<vector<long long>> groups(uf.par.size());
 
-  for (ll i = 0; i < (ll)uf.par.size(); i++) {
+  for (long long i = 0; i < (long long)uf.par.size(); i++) {
     groups[uf.root(i)].push_back(i);
   }
 

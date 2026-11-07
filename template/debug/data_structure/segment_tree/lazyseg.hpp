@@ -1,5 +1,5 @@
 template<class T>
-concept DebugLazySegmentTree = requires(T& x, ll i) {
+concept DebugLazySegmentTree = requires(T& x, long long i) {
   x.sz;
   x.val(i);
   x.lazyMul;
@@ -10,7 +10,7 @@ template<DebugLazySegmentTree T>
 void debug_print(T& seg) {
   cerr << "[";
 
-  for (ll i = 0; i < seg.sz; i++) {
+  for (long long i = 0; i < seg.sz; i++) {
     if (i) cerr << ", ";
     debug_print(seg.val(i));
   }

@@ -7,6 +7,11 @@ struct Monoid{
   static Monoid leaf(T x){return (Monoid){x,x,x,1};}
 };
 template<class T=ll>
+struct Operator{
+  T m,x;
+  static Operator id(){return (Operator){1,0};}
+};
+template<class T=ll>
 Monoid<T> op(Monoid<T> a,Monoid<T> b){
   Monoid<T> r;
   r.max_v=max(a.max_v,b.max_v);
@@ -16,70 +21,86 @@ Monoid<T> op(Monoid<T> a,Monoid<T> b){
   return r;
 }
 template<class T=ll>
-Monoid<T> affine(Monoid<T> a,T m,T x){
+Monoid<T> mapping(Operator<T> f,Monoid<T> a){
   Monoid<T> r;
-  if(m>=0){
-    r.max_v=a.max_v*m+x;
-    r.min_v=a.min_v*m+x;
+  if(f.m>=0){
+    r.max_v=a.max_v*f.m+f.x;
+    r.min_v=a.min_v*f.m+f.x;
   }else{
-    r.max_v=a.min_v*m+x;
-    r.min_v=a.max_v*m+x;
+    r.max_v=a.min_v*f.m+f.x;
+    r.min_v=a.max_v*f.m+f.x;
   }
-  r.sum_v=a.sum_v*m+x*a.len;
+  r.sum_v=a.sum_v*f.m+f.x*a.len;
   r.len=a.len;
+  return r;
+}
+template<class T=ll>
+Operator<T> composition(Operator<T> f,Operator<T> g){
+  Operator<T> r;
+  r.m=f.m*g.m;
+  r.x=f.m*g.x+f.x;
   return r;
 }
 template<class T=ll>
 struct LST{
   ll n,sz;
   vec<Monoid<T>> node;
-  vec<T> lazyMul,lazyAdd;
-  Monoid<T> e;
+  vec<Operator<T>> lazy;
+  vec<bool> lazy_flag;
+  Monoid<T> e_m;
+  Operator<T> e_om;
   LST(){}
   LST(ll nn,T x=0):LST(vec<T>(nn,x)){}
   LST(vec<T> v){
-    e=Monoid<T>::unit();
+    e_m=Monoid<T>::unit();
+    e_om=Operator<T>::id();
     sz=(ll)v.size(),n=1;
     while(n<sz) n*=2;
-    node.resize(2*n-1,e);
-    lazyMul.resize(2*n-1,1);
-    lazyAdd.resize(2*n-1,0);
+    node.resize(2*n-1,e_m);
+    lazy.resize(2*n-1,e_om);
+    lazy_flag.resize(2*n-1,false);
     for(ll i=0;i<sz;i++) node[i+n-1]=Monoid<T>::leaf(v[i]);
     for(ll i=n-2;i>=0;i--) node[i]=op(node[i*2+1],node[i*2+2]);
   }
-  void apply_op(ll k,T m,T x){
+  void pull(ll k){
+    node[k]=op(node[2*k+1],node[2*k+2]);
+  }
+  void apply_op(ll k,Operator<T> f){
     if(node[k].len==0) return;
-    node[k]=affine(node[k],m,x);
-    lazyMul[k]*=m;
-    lazyAdd[k]=lazyAdd[k]*m+x;
-  }
-  void push(ll k,ll l,ll r){
-    if(lazyMul[k]==1&&lazyAdd[k]==0) return;
-    if(r-l>1){
-      apply_op(k*2+1,lazyMul[k],lazyAdd[k]);
-      apply_op(k*2+2,lazyMul[k],lazyAdd[k]);
+    node[k]=mapping(f,node[k]);
+    if(k<n-1){
+      lazy[k]=composition(f,lazy[k]);
+      lazy_flag[k]=true;
     }
-    lazyMul[k]=1;
-    lazyAdd[k]=0;
   }
-  void apply(ll a,ll b,T m,T x,ll k=0,ll l=0,ll r=-1){
+  void push(ll k){
+    if(!lazy_flag[k]) return;
+    if(k<n-1){
+      apply_op(k*2+1,lazy[k]);
+      apply_op(k*2+2,lazy[k]);
+    }
+    lazy[k]=e_om;
+    lazy_flag[k]=false;
+  }
+  void apply(ll a,ll b,Operator<T> f,ll k=0,ll l=0,ll r=-1){
     if(r<0) r=n;
-    push(k,l,r);
     if(b<=l||r<=a) return;
-    if(a<=l&&r<=b) apply_op(k,m,x);
-    else{
-      apply(a,b,m,x,2*k+1,l,(l+r)/2);
-      apply(a,b,m,x,2*k+2,(l+r)/2,r);
-      node[k]=op(node[2*k+1],node[2*k+2]);
+    if(a<=l&&r<=b){
+      apply_op(k,f);
+      return;
     }
+    push(k);
+    apply(a,b,f,2*k+1,l,(l+r)/2);
+    apply(a,b,f,2*k+2,(l+r)/2,r);
+    pull(k);
   }
-  void add(ll a,ll b,T x){apply(a,b,1,x);}
-  void update(ll a,ll b,T x){apply(a,b,0,x);}
-  void multiply(ll a,ll b,T x){apply(a,b,x,0);}
+  void add(ll a,ll b,T x){apply(a,b,(Operator<T>){1,x});}
+  void update(ll a,ll b,T x){apply(a,b,(Operator<T>){0,x});}
+  void multiply(ll a,ll b,T x){apply(a,b,(Operator<T>){x,0});}
   Monoid<T> find(ll a,ll b,ll k=0,ll l=0,ll r=-1){
     if(r<0) r=n;
-    push(k,l,r);
-    if(b<=l||r<=a) return e;
+    push(k);
+    if(b<=l||r<=a) return e_m;
     if(a<=l&&r<=b) return node[k];
     Monoid<T> vl=find(a,b,2*k+1,l,(l+r)/2);
     Monoid<T> vr=find(a,b,2*k+2,(l+r)/2,r);
@@ -91,7 +112,7 @@ struct LST{
   T val(ll a){return find(a,a+1).sum_v;}
   ll lower_bound(T x,ll k=0,ll l=0,ll r=-1){
     if(r<0) r=n;
-    push(k,l,r);
+    push(k);
     if(node[k].max_v<x) return sz;
     if(k>=n-1) return l;
     ll m=(l+r)/2;
@@ -101,10 +122,10 @@ struct LST{
   template<typename F>
   ll max_right(ll a,F check,Monoid<T> &acc,ll k=0,ll l=0,ll r=-1){
     if(r<0) r=n;
-    push(k,l,r);
+    push(k);
     if(r<=a) return r;
     if(a<=l){
-      Monoid<T> nxt=(acc.len==0)?node[k]:op(acc,node[k]);
+      Monoid<T> nxt=op(acc,node[k]);
       if(check(nxt)){
         acc=nxt;
         return r;
@@ -124,10 +145,10 @@ struct LST{
   template<typename F>
   ll min_left(ll b,F check,Monoid<T> &acc,ll k=0,ll l=0,ll r=-1){
     if(r<0) r=n;
-    push(k,l,r);
+    push(k);
     if(b<=l) return l;
     if(r<=b){
-      Monoid<T> nxt=(acc.len==0)?node[k]:op(node[k],acc);
+      Monoid<T> nxt=op(node[k],acc);
       if(check(nxt)){
         acc=nxt;
         return l;
